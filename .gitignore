@@ -94,3 +94,6 @@ coverage/
 *.a
 *.lib
 *.obj
+
+# Dataset
+data/
