@@ -34,4 +34,4 @@ class CNN(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = torch.flatten(x, 1)
-        return self.classifier(x)
+        return x, self.classifier(x)

@@ -56,3 +56,14 @@ class SupCon(nn.Module):
 
         loss = -mean_log_prob_pos.mean()
         return loss
+    
+
+class CombinedLoss(nn.Module):
+    def __init__(self, alpha = 0.5):
+        super(CombinedLoss, self).__init__()
+        self.alpha = alpha
+        self.entropy_loss = nn.CrossEntropyLoss()
+        self.supcon_loss = SupCon()
+
+    def forward(self, embeddings, outputs, labels):
+        return self.entropy_loss(outputs, labels) * (1 - self.alpha) + self.supcon_loss(embeddings, labels) * self.alpha
