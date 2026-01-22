@@ -56,7 +56,7 @@ class ABCrown:
         model: torch.nn.Module,
         image: torch.Tensor,
         n_classes: int,
-        right_class_index: int,
+        correct_class_index: int,
         eps: float,
     ) -> SolveResult:
         """
@@ -67,7 +67,7 @@ class ABCrown:
             model (torch.nn.Module): The neural network model to verify.
             image (torch.Tensor): The input image tensor to verify against.
             n_classes (int): The total number of classes in the classification task.
-            right_class_index (int): The index of the correct class for the input image.
+            correct_class_index (int): The index of the correct class for the input image.
             eps (float): The maximum perturbation allowed for the input image.
         Returns:
             dict: A dictionary containing the result of the verification process with
@@ -83,7 +83,7 @@ class ABCrown:
         assert isinstance(model, torch.nn.Module), "model must be an instance of torch.nn.Module"
         assert isinstance(image, torch.Tensor), "image must be a torch.Tensor"
         assert isinstance(n_classes, int) and n_classes > 0, "n_classes must be a positive integer"
-        assert isinstance(right_class_index, int) and 0 <= right_class_index < n_classes, "right_class_index must be an integer within the range of [0, n_classes)"
+        assert isinstance(correct_class_index, int) and 0 <= correct_class_index < n_classes, "correct_class_index must be an integer within the range of [0, n_classes)"
         assert isinstance(eps, float) and eps >= 0, "eps must be a non-negative float"
                 
         x = input_vars(image.shape)
@@ -91,11 +91,11 @@ class ABCrown:
         input_constraint = (x >= image - eps) & (x <= image + eps)
         output_constraint = None
         for index in range(0, n_classes):
-            if index != right_class_index:
+            if index != correct_class_index:
                 if output_constraint is None:
-                    output_constraint = y[right_class_index] > y[index]
+                    output_constraint = y[correct_class_index] > y[index]
                 else:
-                    output_constraint = output_constraint & (y[right_class_index] > y[index])
+                    output_constraint = output_constraint & (y[correct_class_index] > y[index])
                 
         spec = VerificationSpec.build_spec(
             input_vars=x,
