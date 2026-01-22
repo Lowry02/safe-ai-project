@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-class Net(nn.Module):
+class CNN(nn.Module):
     def __init__(self, in_channels = 3, num_classes = 10):
-        super(Net, self).__init__()
+        super(CNN, self).__init__()
 
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
