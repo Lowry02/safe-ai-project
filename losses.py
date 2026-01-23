@@ -61,7 +61,7 @@ class SupCon(nn.Module):
     
 
 class CombinedLoss(nn.Module):
-    def __init__(self, alpha = 0.2):
+    def __init__(self, alpha = 0.1):
         super(CombinedLoss, self).__init__()
         self.alpha = alpha
         self.entropy_loss = nn.CrossEntropyLoss()
