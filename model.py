@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class CNN(nn.Module):
-    def __init__(self, in_channels = 3, num_classes = 10):
+    def __init__(self, in_channels = 3, num_classes = 10, proj_dim = 128):
         super(CNN, self).__init__()
 
         self.features = nn.Sequential(
@@ -25,13 +25,22 @@ class CNN(nn.Module):
             nn.MaxPool2d(kernel_size=2)
         )
 
-        self.classifier = nn.Sequential(
-            nn.Linear(256 * 4 * 4, 1024),
+        self.fc = nn.Linear(256 * 4 * 4, 1024)
+
+        self.projector = nn.Sequential(
+            nn.Linear(1024, 1024),
             nn.ReLU(),
-            nn.Linear(1024, num_classes)
+            nn.Linear(1024, proj_dim)
         )
+
+        self.classifier = nn.Linear(1024, num_classes)
 
     def forward(self, x):
         x = self.features(x)
         x = torch.flatten(x, 1)
-        return x, self.classifier(x)
+        features = self.fc(x)
+
+        proj = self.projector(features)      # for SupCon
+        logits = self.classifier(features)   # for CE
+
+        return proj, logits

@@ -52,14 +52,16 @@ class SupCon(nn.Module):
         log_prob = logits - torch.log(exp_logits.sum(dim=1, keepdim=True))
 
         # average over positives
-        mean_log_prob_pos = (mask * log_prob).sum(dim=1) / mask.sum(dim=1)
+        mask_sum = mask.sum(dim=1)
+        mask_sum = torch.clamp(mask_sum, min=1.0)
+        mean_log_prob_pos = (mask * log_prob).sum(dim=1) / mask_sum
 
         loss = -mean_log_prob_pos.mean()
         return loss
     
 
 class CombinedLoss(nn.Module):
-    def __init__(self, alpha = 0.5):
+    def __init__(self, alpha = 0.2):
         super(CombinedLoss, self).__init__()
         self.alpha = alpha
         self.entropy_loss = nn.CrossEntropyLoss()
