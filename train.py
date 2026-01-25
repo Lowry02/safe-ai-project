@@ -1,7 +1,8 @@
+import wandb
 import torch
 import torch.nn as nn
+from typing import Callable
 from torch.optim import Optimizer
-from typing import Callable, Tuple
 from torch.utils.data import DataLoader
 
 def default_middleware(images:torch.Tensor, labels:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -16,7 +17,8 @@ def train(
     epochs:int,
     device:torch.device|str,
     middleware:Callable[[torch.Tensor, torch.Tensor], tuple[torch.Tensor, torch.Tensor]] | None = None,
-    compute_accuracy:bool = True
+    compute_accuracy:bool = True,
+    wandb_logging: bool = False,
 ) -> nn.Module:
     if middleware is None:
         middleware = default_middleware
@@ -70,6 +72,19 @@ def train(
             print(f"> Epoch {epoch+1}/{epochs}")
             print(f"  Train Loss: {train_loss:.4f}")
             print(f"  Validation Loss: {validation_loss:.4f}")
+            
+        if wandb_logging:
+            log = {
+                "train_loss": train_loss,
+                "validation_loss": validation_loss,
+            }
+            
+            if compute_accuracy:
+                log["train_accuracy"] = train_accuracy,
+                log["validation_accuracy"] = validation_accuracy
+            
+            wandb.log(log)
+            
         
     return model
 
