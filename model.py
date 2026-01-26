@@ -75,9 +75,11 @@ class Encoder(nn.Module):
         )
 
         self.projector = nn.Sequential(
-            nn.Linear(256 * 4 * 4, 1024),
+            nn.Linear(256 * 4 * 4, proj_dim * 4),
             nn.ReLU(),
-            nn.Linear(1024, proj_dim),
+            nn.Linear(proj_dim * 4, proj_dim * 2),
+            nn.ReLU(),
+            nn.Linear(proj_dim * 2, proj_dim),
             nn.BatchNorm1d(proj_dim)
         )
     
