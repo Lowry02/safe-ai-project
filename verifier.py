@@ -36,10 +36,22 @@ class ABCrown:
         custom_config['general'] = {
             "device": device,
         }
+        
+        # disabling pgd
         custom_config['attack'] = {
             "general_attack": False,
-            "pgd_order": "after",
-            "pgd_steps": 1,
+            "pgd_order": "none",
+            "pgd_steps": 0,
+        }
+        custom_config["bab"] = {
+            "max_domains": 1,
+            "timeout": 10,
+            "max_iterations" : 1
+        }
+        custom_config['solver'] = {
+            "beta-crown": {
+                "iteration": 0
+            }
         }
         self.config = ConfigBuilder().from_defaults()
         self.config = self.override_config(custom_config)
