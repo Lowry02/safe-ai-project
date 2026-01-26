@@ -1,5 +1,7 @@
 import torch
+import torch.nn as nn
 from typing import Literal
+import torch.nn.functional as F
 from abcrown.api import SolveResult
 from abcrown import (
     ABCrownSolver,
@@ -33,6 +35,11 @@ class ABCrown:
         custom_config = custom_config if custom_config is not None else {}
         custom_config['general'] = {
             "device": device,
+        }
+        custom_config['attack'] = {
+            "general_attack": False,
+            "pgd_order": "after",
+            "pgd_steps": 1,
         }
         self.config = ConfigBuilder().from_defaults()
         self.config = self.override_config(custom_config)
@@ -108,4 +115,72 @@ class ABCrown:
         result = solver.solve()
         
         return result
-            
+
+class PGDVerifier():
+    def __init__(self, device: Literal['cpu', 'mps', "cuda"] | str='cpu') -> None:
+        self.device = device
+
+    def verify(
+        self,
+        model:nn.Module,
+        images:torch.Tensor,
+        labels:torch.Tensor,
+        epsilon:float=8/255,
+        alpha:float=2/255,
+        num_steps:int=10,
+        clamp_min:float=0.0,
+        clamp_max:float=1.0,
+        random_start:bool=True,
+    ):
+        """
+        Perform PGD attack (L-infinity).
+
+        Args:
+            model: torch.nn.Module
+            images: input tensor of shape (N, C, H, W)
+            labels: true labels
+            epsilon: max perturbation
+            alpha: step size
+            num_steps: number of PGD iterations
+            clamp_min, clamp_max: valid data range
+            random_start: whether to start from a random point in the epsilon-ball
+
+        Returns:
+            Adversarial examples tensor
+        """
+        with torch.enable_grad():
+            model.eval()
+
+            # Clone inputs
+            ori_images = images.detach()
+            adv_images = ori_images.clone()
+
+            if random_start:
+                adv_images = adv_images + torch.empty_like(adv_images).uniform_(-epsilon, epsilon)
+                adv_images = torch.clamp(adv_images, clamp_min, clamp_max)
+
+            for _ in range(num_steps):
+                adv_images.requires_grad = True
+
+                outputs = model(adv_images)
+                successes = torch.argmax(outputs, dim=1) != labels
+                if torch.all(successes):
+                    break
+                
+                loss = F.cross_entropy(outputs, labels)
+
+                grad = torch.autograd.grad(
+                    loss, adv_images, retain_graph=False, create_graph=False
+                )[0]
+
+                # Gradient ascent step
+                adv_images = adv_images + alpha * grad.sign()
+
+                # Project back into epsilon-ball
+                eta = torch.clamp(adv_images - ori_images, min=-epsilon, max=epsilon)
+                adv_images = ori_images + eta
+
+                # Clamp to valid range
+                adv_images = torch.clamp(adv_images, clamp_min, clamp_max).detach()
+
+            return adv_images, successes
