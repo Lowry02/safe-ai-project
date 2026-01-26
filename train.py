@@ -1,9 +1,11 @@
+# TRAIN FILE
 import wandb
 import torch
 import torch.nn as nn
 from typing import Callable
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import LRScheduler
 
 def default_middleware(images:torch.Tensor, labels:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     return images, labels
@@ -16,6 +18,7 @@ def train(
     criterion:nn.Module,
     epochs:int,
     device:torch.device|str,
+    scheduler: LRScheduler | None = None,
     middleware:Callable[[torch.Tensor, torch.Tensor], tuple[torch.Tensor, torch.Tensor]] | None = None,
     compute_accuracy:bool = True,
     wandb_logging: bool = False,
@@ -42,9 +45,12 @@ def train(
             train_loss += loss.item()
             train_accuracy += (torch.argmax(output, dim=1) == labels).sum().item() / len(labels)
 
+        if scheduler is not None:
+            scheduler.step()
+            
         train_loss /= len(train_loader)
         train_accuracy = train_accuracy / len(train_loader) * 100
-
+        
         model.eval()
         with torch.no_grad():
             validation_loss = 0
@@ -80,7 +86,7 @@ def train(
             }
             
             if compute_accuracy:
-                log["train_accuracy"] = train_accuracy,
+                log["train_accuracy"] = train_accuracy
                 log["validation_accuracy"] = validation_accuracy
             
             wandb.log(log)
