@@ -133,7 +133,9 @@ class PGDVerifier():
         random_start:bool=True,
     ):
         """
-        Perform PGD attack (L-infinity).
+        Perform PGD attack (L-infinity). 
+        It is considered an attack success if an image that starts with a correct prediction
+        ends with a wrong prediction.
 
         Args:
             model: torch.nn.Module
@@ -148,9 +150,14 @@ class PGDVerifier():
         Returns:
             Adversarial examples tensor
         """
+        
+        was_training = model.training
+        
         with torch.enable_grad():
             model.eval()
-
+            outputs = model(images)
+            initial_wrong_predictions = torch.argmax(outputs, dim=1) != labels
+            
             # Clone inputs
             ori_images = images.detach()
             adv_images = ori_images.clone()
@@ -164,8 +171,7 @@ class PGDVerifier():
 
                 outputs = model(adv_images)
                 successes = torch.argmax(outputs, dim=1) != labels
-                if torch.all(successes):
-                    break
+                successes[initial_wrong_predictions] = False    # no success if you started with a wrong prediction
                 
                 loss = F.cross_entropy(outputs, labels)
 
@@ -182,5 +188,8 @@ class PGDVerifier():
 
                 # Clamp to valid range
                 adv_images = torch.clamp(adv_images, clamp_min, clamp_max).detach()
+            
+            if was_training:
+                model.train()
 
-            return adv_images, successes
+            return adv_images, successes, initial_wrong_predictions
