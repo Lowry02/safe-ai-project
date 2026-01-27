@@ -36,6 +36,9 @@ class ABCrown:
         custom_config['general'] = {
             "device": device,
         }
+        custom_config["bab"] = {
+            "max_iterations": 100
+        }
         custom_config['attack'] = {
             "pgd_order": "before",
             "pgd_steps": 15,
