@@ -86,6 +86,6 @@ The Adversarial Contrastive model is wrong, do not consider it.
     	- Adversarial Model ASR: 65.90%;
     	- Adversarial Contrastive ASR: 99.24%;
 
-- ABCrown executed on 50 samples:
+- ABCrown executed on 10 samples (sarebbe da eseguire su un set più grande):
   - EPSILON 1/255 con 10 sample {'Normal Model': {'safe-incomplete': 8, 'unsafe-pgd': 1, 'safe': 1}, 'Contrastive Model': {'unsafe-pgd': 1, 'safe-incomplete': 5, 'safe': 4}, 'Adversarial Model': {'safe-incomplete': 9, 'unsafe-pgd': 1}, 'Adversarial Contrastive': {'safe': 7, 'safe-incomplete': 2, 'unsafe-pgd': 1}}
   - 
