@@ -41,7 +41,7 @@ class ABCrown:
         }
         custom_config['attack'] = {
             "pgd_order": "before",
-            "pgd_steps": 15,
+            "pgd_steps": 10,
         }
         custom_config['solver'] = {
             "batch_size": 64,
@@ -89,7 +89,7 @@ class ABCrown:
             dict: A dictionary containing the result of the verification process with
             the following keys:
             - status: str, one of 'verified', 'unsafe-pgd', 'unsafe-bab', 
-              'safe-incomplete' (no PGD needed), 'unknown'.
+              'safe-incomplete' (only alpha-crown needed), 'unknown'.
             - success: bool, True if the property is satisfied or a counterexample 
               is confirmed when unsafety is expected.
             - reference: dict, optional intermediate data (e.g., bounds, attack traces).
