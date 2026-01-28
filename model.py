@@ -1,53 +1,9 @@
 import torch
 import torch.nn as nn
-
-class _CNN(nn.Module):
-    def __init__(self, in_channels = 3, num_classes = 10, proj_dim = 128):
-        super(_CNN, self).__init__()
-
-        self.features = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-
-            nn.Conv2d(64, 192, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            nn.ReLU(),
-
-            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(),
-
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2)
-        )
-
-        self.fc = nn.Linear(256 * 4 * 4, 1024)
-
-        self.projector = nn.Sequential(
-            nn.Linear(1024, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, proj_dim)
-        )
-
-        self.classifier = nn.Linear(1024, num_classes)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = torch.flatten(x, 1)
-        features = self.fc(x)
-
-        proj = self.projector(features)      # for SupCon
-        logits = self.classifier(features)   # for CE
-
-        return proj, logits
     
-class Encoder(nn.Module):
+class EncoderWithPooling(nn.Module):
     def __init__(self, in_channels:int = 3, proj_dim:int = 128):
-        super(Encoder, self).__init__()
+        super(EncoderWithPooling, self).__init__()
 
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
@@ -86,20 +42,36 @@ class Encoder(nn.Module):
     def forward(self, x:torch.Tensor):
         x = self.features(x)
         x = torch.flatten(x, 1)
-        return self.projector(x)
+        x = self.projector(x)
+        return x
     
-class FFClassifier(nn.Module):
-    def __init__(self, in_dim:int = 128, num_classes:int = 10):
-        super(FFClassifier, self).__init__()
-
-        self.classifier = nn.Sequential(
-            nn.Linear(in_dim, in_dim*4),
-            nn.ReLU(),
-            nn.Linear(in_dim*4, num_classes)
-        )
+class EncoderNoPooling(nn.Module):
+    def __init__(self, in_channels:int = 3, proj_dim:int = 128):
+        super().__init__()
         
-    def forward(self, x:torch.Tensor):
-        return self.classifier(x)
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=proj_dim, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(proj_dim),
+            nn.ReLU(),
+        )
+        self.proj = nn.Sequential(
+            nn.Linear(proj_dim*4*4, 256),
+            nn.ReLU(),
+            nn.Linear(256, proj_dim),
+            nn.BatchNorm1d(proj_dim),
+        )
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = torch.flatten(x, 1)
+        x = self.proj(x)
+        return x
     
 class LinearClassifier(nn.Module):
     def __init__(self, in_dim:int = 128, num_classes:int = 10):
@@ -111,15 +83,18 @@ class LinearClassifier(nn.Module):
         return self.classifier(x)
     
 class CNN(nn.Module):
-    def __init__(self, in_channels:int = 3, num_classes:int = 10, proj_dim:int = 128):
-        super(CNN, self).__init__()
+    def __init__(self, in_channels:int = 3, num_classes:int = 10, proj_dim:int = 128, pooling:bool=True):
+        super().__init__()
 
-        self.encoder = Encoder(in_channels, proj_dim)
+        if pooling:
+            self.encoder = EncoderWithPooling(in_channels, proj_dim)
+        else: 
+            self.encoder = EncoderNoPooling(in_channels, proj_dim)
+            
         self.classifier = LinearClassifier(proj_dim, num_classes)
-        # self.classifier = FFClassifier(proj_dim, num_classes)
 
     @classmethod
-    def import_from(cls, encoder:Encoder, classifier:LinearClassifier):
+    def import_from(cls, encoder:nn.Module, classifier:nn.Module):
         cnn = CNN()
         cnn.encoder = encoder
         cnn.classifier = classifier
@@ -133,8 +108,8 @@ class CNN(nn.Module):
     
 class CNNCrown(CNN):
     # it must return only logits in order to be verifiable by ABCrown
-    def __init__(self, in_channels=3, num_classes=10, proj_dim=128):
-        super().__init__(in_channels, num_classes, proj_dim)
+    def __init__(self, in_channels=3, num_classes=10, proj_dim=128, pooling:bool=True):
+        super().__init__(in_channels, num_classes, proj_dim, pooling)
         
     def forward(self, x):
         return super().forward(x)[1]
