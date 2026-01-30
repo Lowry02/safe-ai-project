@@ -1,11 +1,11 @@
+from typing import Callable, Tuple
+import matplotlib.pyplot as plt
 import io
 import umap
 import wandb
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 from torch.optim import Optimizer
-from typing import Callable, Tuple
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LRScheduler
 
@@ -121,7 +121,6 @@ def train(
 
             wandb.log(log)
 
-
     return model
 
 def test(model:nn.Module, train_loader:DataLoader, test_loader:DataLoader, device:str|torch.device="cuda") -> Tuple[float, float]:
@@ -147,7 +146,7 @@ def test(model:nn.Module, train_loader:DataLoader, test_loader:DataLoader, devic
     model.to(device)
     train_accuracy = 0
     with torch.no_grad():
-        for i, (images, labels) in enumerate(train_loader):
+        for _, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.to(device)
             logits = model(images)
@@ -158,7 +157,7 @@ def test(model:nn.Module, train_loader:DataLoader, test_loader:DataLoader, devic
 
     test_accuracy = 0
     with torch.no_grad():
-        for i, (images, labels) in enumerate(test_loader):
+        for _, (images, labels) in enumerate(test_loader):
             images = images.to(device)
             labels = labels.to(device)
             logits = model(images)
@@ -245,7 +244,6 @@ def get_embeddings_plot(
     )
     plt.title("UMAP of Embeddings (Train)")
     plt.colorbar(scatter, ticks=range(10))
-
 
     # ---- validatin embeddings
     all_embeddings = []

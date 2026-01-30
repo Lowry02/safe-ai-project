@@ -1,7 +1,8 @@
+from typing import Literal, Tuple, Callable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Literal, Tuple, Callable
+
 from abcrown.api import SolveResult
 from abcrown import (
     ABCrownSolver,
@@ -199,9 +200,7 @@ class PGDVerifier():
 
                 loss = criterion(outputs, labels)
 
-                grad = torch.autograd.grad(
-                    loss, adv_images, retain_graph=False, create_graph=False
-                )[0]
+                grad = torch.autograd.grad(loss, adv_images, retain_graph=False, create_graph=False)[0]
 
                 # Gradient ascent step
                 adv_images = adv_images + alpha * grad.sign()
