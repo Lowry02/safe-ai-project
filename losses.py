@@ -9,10 +9,21 @@ class SupConLoss(nn.Module):
 
     def forward(self, features, labels):
         """
-        features: Tensor of shape (B, D), where B is the batch size and D is the size of the embeddings?
-        labels:   Tensor of shape (B,)
+        Computes the supervised contrastive loss for a batch of feature embeddings and their corresponding labels.
+        Args:
+            features (torch.Tensor): A tensor of shape (B, D) containing the feature embeddings for a batch of B samples, each of dimension D.
+            labels (torch.Tensor): A tensor of shape (B,) containing the class labels for each sample in the batch.
+        Returns:
+            torch.Tensor: A scalar tensor representing the computed supervised contrastive loss.
+        Details:
+            - Normalizes the feature embeddings to unit vectors.
+            - Computes a pairwise cosine similarity matrix, scaled by the temperature parameter.
+            - Constructs a mask to identify positive pairs (samples with the same label) and excludes self-comparisons.
+            - Applies log-softmax to the similarity matrix.
+            - Averages the log-probabilities over positive pairs for each sample.
+            - Returns the mean negative log-probability as the loss.
         """
-
+        
         device = features.device
         # normalize embeddings, so sim(z_i, z_j) = z_i ⋅ z_j
         features = F.normalize(features)
