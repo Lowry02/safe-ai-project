@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from typing import Literal
 import torch.nn.functional as F
+from typing import Literal, Tuple, Callable
 from abcrown.api import SolveResult
 from abcrown import (
     ABCrownSolver,
@@ -126,7 +126,7 @@ class ABCrown:
         return result
 
 class PGDVerifier():
-    def __init__(self, device: Literal['cpu', 'mps', "cuda"] | str='cpu') -> None:
+    def __init__(self, device: str | torch.device ='cpu') -> None:
         self.device = device
 
     def verify(
@@ -140,33 +140,48 @@ class PGDVerifier():
         clamp_min:float=0.0,
         clamp_max:float=1.0,
         random_start:bool=True,
-    ):
+        criterion:Callable=F.cross_entropy
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Perform PGD attack (L-infinity). 
-        It is considered an attack success if an image that starts with a correct prediction
-        ends with a wrong prediction.
-
+        Perform adversarial attack verification on a given model using the Projected Gradient Descent (PGD) method.
         Args:
-            model: torch.nn.Module
-            images: input tensor of shape (N, C, H, W)
-            labels: true labels
-            epsilon: max perturbation
-            alpha: step size
-            num_steps: number of PGD iterations
-            clamp_min, clamp_max: valid data range
-            random_start: whether to start from a random point in the epsilon-ball
-
+            model (nn.Module): The neural network model to be verified.
+            images (torch.Tensor): The input images to be perturbed.
+            labels (torch.Tensor): The true labels corresponding to the input images.
+            epsilon (float, optional): The maximum perturbation allowed (L-infinity norm). Default is 8/255.
+            alpha (float, optional): The step size for gradient ascent. Default is 2/255.
+            num_steps (int, optional): The number of gradient ascent steps to perform. Default is 10.
+            clamp_min (float, optional): The minimum value for clamping the perturbed images. Default is 0.0.
+            clamp_max (float, optional): The maximum value for clamping the perturbed images. Default is 1.0.
+            random_start (bool, optional): Whether to initialize the perturbation randomly within the epsilon-ball. Default is True.
+            criterion (Callable, optional): The loss function used to compute gradients. Default is `torch.nn.functional.cross_entropy`.
         Returns:
-            Adversarial examples tensor
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                - adv_images (torch.Tensor): The adversarially perturbed images.
+                - successes (torch.Tensor): A boolean tensor indicating which images were successfully perturbed to cause misclassification.
+                - initial_wrong_predictions (torch.Tensor): A boolean tensor indicating which images were initially misclassified by the model.
         """
         
+        assert isinstance(model, nn.Module), "model must be an instance of nn.Module"
+        assert isinstance(images, torch.Tensor), "images must be a torch.Tensor"
+        assert isinstance(labels, torch.Tensor), "labels must be a torch.Tensor"
+        assert isinstance(epsilon, float) and epsilon >= 0, "epsilon must be a non-negative float"
+        assert isinstance(alpha, float) and alpha > 0, "alpha must be a positive float"
+        assert isinstance(num_steps, int) and num_steps > 0, "num_steps must be a positive integer"
+        assert isinstance(clamp_min, float), "clamp_min must be a float"
+        assert isinstance(clamp_max, float), "clamp_max must be a float"
+        assert clamp_min < clamp_max, "clamp_min must be less than clamp_max"
+        assert isinstance(random_start, bool), "random_start must be a boolean"
+        assert callable(criterion), "criterion must be a callable function"
+
         was_training = model.training
-        
+        criterion = criterion if criterion is not None else F.cross_entropy
+
         with torch.enable_grad():
             model.eval()
             outputs = model(images)
             initial_wrong_predictions = torch.argmax(outputs, dim=1) != labels
-            
+
             # Clone inputs
             ori_images = images.detach()
             adv_images = ori_images.clone()
@@ -181,8 +196,8 @@ class PGDVerifier():
                 outputs = model(adv_images)
                 successes = torch.argmax(outputs, dim=1) != labels
                 successes[initial_wrong_predictions] = False    # no success if you started with a wrong prediction
-                
-                loss = F.cross_entropy(outputs, labels)
+
+                loss = criterion(outputs, labels)
 
                 grad = torch.autograd.grad(
                     loss, adv_images, retain_graph=False, create_graph=False
@@ -197,7 +212,7 @@ class PGDVerifier():
 
                 # Clamp to valid range
                 adv_images = torch.clamp(adv_images, clamp_min, clamp_max).detach()
-            
+
             if was_training:
                 model.train()
 

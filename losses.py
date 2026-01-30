@@ -12,7 +12,7 @@ class SupConLoss(nn.Module):
         features: Tensor of shape (B, D), where B is the batch size and D is the size of the embeddings?
         labels:   Tensor of shape (B,)
         """
-        
+
         device = features.device
         # normalize embeddings, so sim(z_i, z_j) = z_i ⋅ z_j
         features = F.normalize(features)
@@ -39,31 +39,4 @@ class SupConLoss(nn.Module):
         mean_log_prob_pos = (mask * log_prob).sum(dim=1) / mask_sum
 
         loss = -mean_log_prob_pos.mean()
-        return loss
-    
-
-class CombinedLoss(nn.Module):
-    def __init__(self, alpha = 0.1):
-        super(CombinedLoss, self).__init__()
-        self.alpha = alpha
-        self.entropy_loss = nn.CrossEntropyLoss()
-        self.supcon_loss = SupConLoss()
-
-    def forward(self, embeddings, outputs, labels):
-        return self.entropy_loss(outputs, labels) * (1 - self.alpha) + self.supcon_loss(embeddings, labels) * self.alpha
-    
-class HingeLoss(nn.Module):
-    def __init__(self, margin:float=1.0) -> None:
-        super(HingeLoss, self).__init__()
-        
-        self.margin = margin
-    
-    def forward(self, logits:torch.Tensor, labels:torch.Tensor):
-        N = logits.size(0)
-
-        correct_class_logits = logits[torch.arange(N), labels].unsqueeze(1)     # TODO: check if unsqueeze is needed
-        margins = torch.clamp(logits - correct_class_logits + self.margin, min=0.0)
-        margins[torch.arange(N), labels] = 0.0
-
-        loss = margins.sum(dim=1).mean()
         return loss
