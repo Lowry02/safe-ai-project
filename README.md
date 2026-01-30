@@ -7,7 +7,7 @@ This repository contains the code, experiments, and notebooks used to investigat
 Neural networks are widely successful in classification tasks but suffer from limited robustness due to weak feature representations and unstable decision boundaries.  
 This project evaluates whether training with Supervised Contrastive Loss (SCL) leads to greater resistance to adversarial perturbations and improved certified robustness via formal verification. More specifically, multiple training strategies were tested on the CIFAR-10 dataset, including Normal training, Adversarial training (PGD) and Certified training (CROWN-IBP), each with and without data augmentation.
 
-It is important to note that all training runs, loss curves, accuracy plots, robustness metrics, and hyperparameter logs are tracked and available here: https://wandb.ai/lorenzocusin02/Cnn-Verification.  
+It is important to note that all training runs, loss curves, accuracy plots, robustness metrics, and hyperparameter logs are tracked and available in [WandB](https://wandb.ai/lorenzocusin02/Cnn-Verification).
 Moreover, final results and plots can be looked at in the [Results Folder](./models_info/results/).
 
 ## Requirements
