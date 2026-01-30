@@ -1,7 +1,5 @@
 # Results
 
-The Adversarial Contrastive model is wrong, do not consider it.
-
 - Accuracy
 	- Augmentation
 		- Normal Model: 84.06% -> 79.70%
@@ -18,10 +16,9 @@ The Adversarial Contrastive model is wrong, do not consider it.
 		- Certified: 81.59% -> 54.21%
 		- Certified Contrastive: 13.33% -> 13.39%
 
-> ASR = Attack Success Rate
-
 ---
 
+> ASR = Attack Success Rate
 > Eps: 1/255
 	> Normal Model
 		- Test ASR: 16.233848571777344%;
@@ -148,6 +145,9 @@ The Adversarial Contrastive model is wrong, do not consider it.
 	> Certified Contrastive
 		- Test ASR: 67.53926849365234%;
 
+---
+
+> ab-crown
 {
    "Normal Model":{
       "timeout":8,
@@ -180,20 +180,3 @@ The Adversarial Contrastive model is wrong, do not consider it.
       "safe-incomplete":20
 	 }
 }
-
-**Certified Model**
-Final verified acc: 95.0% (total 20 examples)
-Problem instances count: 20 , total verified (safe/unsat): 19 , total falsified (unsafe/sat): 0 , timeout: 1
-mean time for ALL instances (total 20):9.206403647130056, max time: 181.97171330451965
-mean time for verified SAFE instances(total 19): 0.11349745800620631, max time: 0.13415861129760742
-mean time for verified SAFE + TIMEOUT instances (total 20): 9.20640825033188, max time: 181.97171330451965 
-unknown (total 1), index: [0]
-safe-incomplete (total 19), index: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-
-**Certified Contrastive Model**
-############# Summary #############
-Final verified acc: 100.0% (total 20 examples)
-Problem instances count: 20 , total verified (safe/unsat): 20 , total falsified (unsafe/sat): 0 , timeout: 0
-mean time for ALL instances (total 20):0.223047359522768, max time: 1.3486418724060059
-mean time for verified SAFE instances(total 20): 0.22304747104644776, max time: 1.3486418724060059
-safe-incomplete (total 20), index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
